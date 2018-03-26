@@ -72,8 +72,8 @@ subscriptions model =
 -- VIEW
 
 
-mkViewBox : Window.Size -> Svg.Attribute Msg
-mkViewBox s =
+viewBoxSvgAttr : Window.Size -> Svg.Attribute Msg
+viewBoxSvgAttr s =
     let
         points =
             [ 0, 0, s.height, s.width ]
@@ -84,16 +84,16 @@ mkViewBox s =
         viewBox pointsAsString
 
 
-mkWidth : Int -> Svg.Attribute Msg
-mkWidth w =
+widthSvgAttr : Int -> Svg.Attribute Msg
+widthSvgAttr w =
     width (toString w ++ "px")
 
 
 view : Model -> Html Msg
 view model =
     svg
-        [ mkViewBox model.boundingSize
-        , mkWidth model.boundingSize.width
+        [ viewBoxSvgAttr model.boundingSize
+        , widthSvgAttr model.boundingSize.width
         ]
         [ text_
             [ color "black"
