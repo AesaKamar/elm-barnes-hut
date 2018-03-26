@@ -5,13 +5,9 @@
 module Main exposing (..)
 
 import Html exposing (Html)
-
-
--- import Html.Events exposing (..)
--- import Random
-
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
+import Window exposing (Size, resizes)
 
 
 main =
@@ -34,12 +30,18 @@ type alias NodeId =
 type alias Model =
     { nodes : List NodeId
     , edges : List ( NodeId, NodeId )
+    , boundingSize : Window.Size
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { nodes = [], edges = [] }, Cmd.none )
+    ( { nodes = []
+      , edges = []
+      , boundingSize = { height = 300, width = 300 }
+      }
+    , Cmd.none
+    )
 
 
 
@@ -47,12 +49,14 @@ init =
 
 
 type Msg
-    = Unit
+    = WindowResize Window.Size
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        WindowResize s ->
+            ( Model model.nodes model.edges s, Cmd.none )
 
 
 
@@ -61,15 +65,39 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Window.resizes WindowResize
 
 
 
 -- VIEW
 
 
+mkViewBox : Window.Size -> Svg.Attribute Msg
+mkViewBox s =
+    let
+        points =
+            [ 0, 0, s.height, s.width ]
+
+        pointsAsString =
+            String.join " " (List.map toString points)
+    in
+        viewBox pointsAsString
+
+
+mkWidth : Int -> Svg.Attribute Msg
+mkWidth w =
+    width (toString w ++ "px")
+
+
 view : Model -> Html Msg
 view model =
-    svg [ viewBox "0 0 100 100", width "300px" ]
-        [ text_ [ color "black", transform "translate(20,20)" ] [ text "Hello World" ]
+    svg
+        [ mkViewBox model.boundingSize
+        , mkWidth model.boundingSize.width
+        ]
+        [ text_
+            [ color "black"
+            , transform "translate(20,20)"
+            ]
+            [ text "Hello World" ]
         ]
