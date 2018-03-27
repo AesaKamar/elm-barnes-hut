@@ -82,8 +82,8 @@ updateQtBound originalQt newBound =
 -}
 
 
-insertQt : Node -> QuadTree -> QuadTree
-insertQt n qt =
+insertIntoQt : Node -> QuadTree -> QuadTree
+insertIntoQt n qt =
     case qt of
         QtEmptyLeaf x ->
             QtOccupiedLeaf { bound = x.bound, occupant = n }
@@ -92,15 +92,27 @@ insertQt n qt =
             QtInternal
                 { totalMass = x.totalMass + n.mass
                 , bound = x.bound
-                , subTrees = insertIntoSubtrees n x.subTrees
+                , subTrees = insertIntoSubQt n x.subTrees
                 }
 
         QtOccupiedLeaf x ->
             QtInternal
                 { bound = x.bound
                 , totalMass = x.occupant.mass + n.mass
-                , subTrees = insertIntoSubtrees n (updateSubQtBounds emptySubTree x.bound)
+                , subTrees = insertIntoSubQt n (updateSubQtBounds emptySubTree x.bound)
                 }
+
+
+insertIntoSubQt : Node -> QtSubTrees -> QtSubTrees
+insertIntoSubQt n sbt =
+    if (getQtBound sbt.nw) |> (contains <| n.coords) then
+        { nw = insertIntoQt n sbt.nw, ne = sbt.ne, se = sbt.se, sw = sbt.sw }
+    else if (getQtBound sbt.ne) |> (contains <| n.coords) then
+        { nw = sbt.nw, ne = insertIntoQt n sbt.ne, se = sbt.se, sw = sbt.sw }
+    else if (getQtBound sbt.se) |> (contains <| n.coords) then
+        { nw = sbt.nw, ne = sbt.ne, se = insertIntoQt n sbt.se, sw = sbt.sw }
+    else
+        { nw = sbt.nw, ne = sbt.ne, se = sbt.se, sw = insertIntoQt n sbt.sw }
 
 
 
@@ -119,15 +131,3 @@ emptySubTree =
 emptyLeafWithNoBounds : QuadTree
 emptyLeafWithNoBounds =
     QtEmptyLeaf { bound = BoundingBox.fromPoint (vec2 0 0) }
-
-
-insertIntoSubtrees : Node -> QtSubTrees -> QtSubTrees
-insertIntoSubtrees n sbt =
-    if (getQtBound sbt.nw) |> (contains <| n.coords) then
-        { nw = insertQt n sbt.nw, ne = sbt.ne, se = sbt.se, sw = sbt.sw }
-    else if (getQtBound sbt.ne) |> (contains <| n.coords) then
-        { nw = sbt.nw, ne = insertQt n sbt.ne, se = sbt.se, sw = sbt.sw }
-    else if (getQtBound sbt.se) |> (contains <| n.coords) then
-        { nw = sbt.nw, ne = sbt.ne, se = insertQt n sbt.se, sw = sbt.sw }
-    else
-        { nw = sbt.nw, ne = sbt.ne, se = sbt.se, sw = insertQt n sbt.sw }

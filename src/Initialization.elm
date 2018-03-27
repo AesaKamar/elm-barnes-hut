@@ -27,4 +27,4 @@ initialQuadTree =
 
 insertedQuadTree : QuadTree
 insertedQuadTree =
-    List.foldl (insertQt) initialQuadTree initNodes
+    List.foldl (insertIntoQt) initialQuadTree initNodes
