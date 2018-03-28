@@ -75,7 +75,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     svg
-        [ widthSvgAttr (getQtBound model.quadTree)
-        , heightSvgAttr (getQtBound model.quadTree)
+        [ widthSvgAttr (transformBoundingBox (getQtBound model.quadTree))
+        , heightSvgAttr (transformBoundingBox (getQtBound model.quadTree))
         ]
         [ viewQuadTree model.quadTree True ]
