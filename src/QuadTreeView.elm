@@ -40,6 +40,39 @@ widthSvgAttr bb =
     width (toString (BB.width bb) ++ "px")
 
 
+heightSvgAttr : BoundingBox -> Svg.Attribute Msg
+heightSvgAttr bb =
+    height (toString (BB.height bb) ++ "px")
+
+
+emptyQuadrantAttrs =
+    [ Atrs.fill "white"
+    , Atrs.strokeWidth "3px"
+    , Atrs.stroke "pink"
+    , Atrs.fillOpacity "0.0"
+    ]
+
+
+occupiedQuadrantAttrs =
+    [ Atrs.fill "white"
+    , Atrs.strokeWidth "3px"
+    , Atrs.stroke "blue"
+    , Atrs.fillOpacity "0.0"
+    ]
+
+
+subTreeAttrs =
+    [ Atrs.fill "white"
+    , Atrs.strokeWidth "3px"
+    , Atrs.stroke "black"
+    , Atrs.fillOpacity "0.0"
+    ]
+
+
+
+-- RENDERING FUNCTIONS
+
+
 viewQuadTree : QuadTree -> ShouldDrawBoundingBox -> Svg.Svg Msg
 viewQuadTree qt shouldDrawBoundingBox =
     case qt of
@@ -49,13 +82,11 @@ viewQuadTree qt shouldDrawBoundingBox =
                 , Atrs.y (BB.topLeft params.bound |> getY |> toString)
                 ]
                 [ Svg.rect
-                    [ Atrs.width (((BB.width params.bound) |> toString) ++ "px")
-                    , Atrs.height (((BB.height params.bound) |> toString) ++ "px")
-                    , Atrs.fill "white"
-                    , Atrs.strokeWidth "3px"
-                    , Atrs.stroke "pink"
-                    , Atrs.fillOpacity "0.0"
-                    ]
+                    ([ Atrs.width (((BB.width params.bound) |> toString) ++ "px")
+                     , Atrs.height (((BB.height params.bound) |> toString) ++ "px")
+                     ]
+                        ++ emptyQuadrantAttrs
+                    )
                     []
                 ]
 
@@ -65,13 +96,11 @@ viewQuadTree qt shouldDrawBoundingBox =
                 , Atrs.y (BB.topLeft params.bound |> getY |> toString)
                 ]
                 [ Svg.rect
-                    [ Atrs.width (BB.width params.bound |> toString)
-                    , Atrs.height (BB.height params.bound |> toString)
-                    , Atrs.fill "white"
-                    , Atrs.strokeWidth "3px"
-                    , Atrs.stroke "blue"
-                    , Atrs.fillOpacity "0.0"
-                    ]
+                    ([ Atrs.width (BB.width params.bound |> toString)
+                     , Atrs.height (BB.height params.bound |> toString)
+                     ]
+                        ++ occupiedQuadrantAttrs
+                    )
                     []
                 ]
 
@@ -81,13 +110,11 @@ viewQuadTree qt shouldDrawBoundingBox =
                 , Atrs.y (BB.topLeft params.bound |> getY |> toString)
                 ]
                 [ Svg.rect
-                    [ Atrs.width ((BB.width params.bound) |> toString)
-                    , Atrs.height ((BB.height params.bound) |> toString)
-                    , Atrs.fill "white"
-                    , Atrs.strokeWidth "3px"
-                    , Atrs.stroke "black"
-                    , Atrs.fillOpacity "0.0"
-                    ]
+                    ([ Atrs.width ((BB.width params.bound) |> toString)
+                     , Atrs.height ((BB.height params.bound) |> toString)
+                     ]
+                        ++ subTreeAttrs
+                    )
                     []
                 , viewQuadTree params.subTrees.nw shouldDrawBoundingBox
                 , viewQuadTree params.subTrees.ne shouldDrawBoundingBox

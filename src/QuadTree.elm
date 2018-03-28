@@ -1,7 +1,8 @@
 module QuadTree exposing (..)
 
-import Math.Vector2 exposing (Vec2, vec2)
+import Math.Vector2 exposing (Vec2, vec2, getX, getY)
 import BoundingBox exposing (BoundingBox, contains)
+import Vec2 exposing (minimal)
 
 
 -- TYPES
@@ -75,6 +76,35 @@ updateQtBound originalQt newBound =
             QtEmptyLeaf { bound = newBound }
 
 
+clamp1D : Float -> Float -> Float -> Float
+clamp1D lower upper point =
+    max lower (min upper point)
+
+
+clamp2D : BoundingBox -> Vec2 -> Vec2
+clamp2D bb v =
+    let
+        lef =
+            getX (BoundingBox.topLeft bb)
+
+        rig =
+            getX (BoundingBox.topRight bb)
+
+        top =
+            getY (BoundingBox.topLeft bb)
+
+        bot =
+            getX (BoundingBox.bottomLeft bb)
+
+        x =
+            clamp1D lef rig (getX v)
+
+        y =
+            clamp1D top bot (getY v)
+    in
+        vec2 x y
+
+
 
 {- | If node x does not contain a body, put the new body n here.
    If node x is an internal node, update the center-of-mass and total mass of x. Recursively insert the body n in the appropriate quadrant.
@@ -84,32 +114,39 @@ updateQtBound originalQt newBound =
 
 insertIntoQt : Node -> QuadTree -> QuadTree
 insertIntoQt n qt =
-    case qt of
-        QtEmptyLeaf x ->
-            QtOccupiedLeaf { bound = x.bound, occupant = n }
+    if (getQtBound qt) |> (contains n.coords) then
+        case qt of
+            QtEmptyLeaf x ->
+                QtOccupiedLeaf { bound = x.bound, occupant = n }
 
-        QtInternal x ->
-            QtInternal
-                { totalMass = x.totalMass + n.mass
-                , bound = x.bound
-                , subTrees = insertIntoSubQt n x.subTrees
-                }
+            QtInternal x ->
+                QtInternal
+                    { totalMass = x.totalMass + n.mass
+                    , bound = x.bound
+                    , subTrees = insertIntoSubQt n x.subTrees
+                    }
 
-        QtOccupiedLeaf x ->
-            QtInternal
-                { bound = x.bound
-                , totalMass = x.occupant.mass + n.mass
-                , subTrees = insertIntoSubQt n (updateSubQtBounds emptySubTree x.bound)
-                }
+            QtOccupiedLeaf x ->
+                QtInternal
+                    { bound = x.bound
+                    , totalMass = x.occupant.mass + n.mass
+                    , subTrees = insertIntoSubQt n (updateSubQtBounds emptySubTreeWithNoBounds x.bound)
+                    }
+    else
+        let
+            clampedNode =
+                { id = n.id, mass = n.mass, coords = (clamp2D (getQtBound qt) n.coords) }
+        in
+            insertIntoQt clampedNode qt
 
 
 insertIntoSubQt : Node -> QtSubTrees -> QtSubTrees
 insertIntoSubQt n sbt =
-    if (getQtBound sbt.nw) |> (contains <| n.coords) then
+    if (getQtBound sbt.nw) |> (contains n.coords) then
         { nw = insertIntoQt n sbt.nw, ne = sbt.ne, se = sbt.se, sw = sbt.sw }
-    else if (getQtBound sbt.ne) |> (contains <| n.coords) then
+    else if (getQtBound sbt.ne) |> (contains n.coords) then
         { nw = sbt.nw, ne = insertIntoQt n sbt.ne, se = sbt.se, sw = sbt.sw }
-    else if (getQtBound sbt.se) |> (contains <| n.coords) then
+    else if (getQtBound sbt.se) |> (contains n.coords) then
         { nw = sbt.nw, ne = sbt.ne, se = insertIntoQt n sbt.se, sw = sbt.sw }
     else
         { nw = sbt.nw, ne = sbt.ne, se = sbt.se, sw = insertIntoQt n sbt.sw }
@@ -119,8 +156,13 @@ insertIntoSubQt n sbt =
 -- VALUES
 
 
-emptySubTree : QtSubTrees
-emptySubTree =
+emptySubTree : BoundingBox -> QtSubTrees
+emptySubTree bb =
+    updateSubQtBounds emptySubTreeWithNoBounds bb
+
+
+emptySubTreeWithNoBounds : QtSubTrees
+emptySubTreeWithNoBounds =
     { nw = emptyLeafWithNoBounds
     , ne = emptyLeafWithNoBounds
     , se = emptyLeafWithNoBounds
