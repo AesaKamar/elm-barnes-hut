@@ -1,12 +1,14 @@
 module Main exposing (..)
 
 import Html exposing (Html)
+import Html.Attributes exposing (style)
 import Svg exposing (rect, svg, g)
 import Window exposing (Size, resizes)
 import QuadTree exposing (..)
 import Messages exposing (..)
 import QuadTreeView exposing (..)
 import Initialization exposing (..)
+import Svg.Attributes
 
 
 main =
@@ -26,6 +28,7 @@ type alias Model =
     { nodes : List NodeId
     , edges : List ( NodeId, NodeId )
     , quadTree : QuadTree
+    , screenDims : Size
     }
 
 
@@ -34,6 +37,7 @@ init =
     ( { nodes = initNodeIds
       , edges = []
       , quadTree = insertedQuadTree
+      , screenDims = { height = 0, width = 0 }
       }
     , Cmd.none
     )
@@ -48,13 +52,13 @@ update msg model =
     case msg of
         WindowResize s ->
             let
-                topLeft =
+                botLeft =
                     ( 0, 0 )
 
-                botRight =
+                topRight =
                     ( s.width |> toFloat, s.height |> toFloat )
             in
-                ( Model model.nodes model.edges (updateQtBound model.quadTree (fromCorners topLeft botRight))
+                ( Model model.nodes model.edges (updateQtBound model.quadTree (fromCorners botLeft topRight)) s
                 , Cmd.none
                 )
 
@@ -75,7 +79,9 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     svg
-        [ widthSvgAttr (transformBoundingBox (getQtBound model.quadTree))
-        , heightSvgAttr (transformBoundingBox (getQtBound model.quadTree))
+        [ Svg.Attributes.width ((model.screenDims.width |> toString) ++ "px")
+        , Svg.Attributes.height ((model.screenDims.height |> toString) ++ "px")
+        , viewBoxSvgAttr model.screenDims
+        , Html.Attributes.style [ ( "outline-offset", "-10px" ) ]
         ]
-        [ viewQuadTree model.quadTree True ]
+        [ viewQuadTree model.quadTree True model.screenDims ]

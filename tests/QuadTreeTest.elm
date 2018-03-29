@@ -67,9 +67,54 @@ suite =
                                 Expect.fail "not internal node"
             ]
         , describe "insertIntoSubQt"
-            [ test "should do something" <|
+            [ test "inserting 2 nodes in top right and bottom right should put them in correct place" <|
                 \_ ->
-                    Expect.pass
+                    let
+                        nodeTopRight =
+                            { id = 0
+                            , mass = 1
+                            , coords = vec2 75 75
+                            }
+
+                        nodeBotRight =
+                            { id = 1
+                            , mass = 1
+                            , coords = vec2 75 25
+                            }
+
+                        bb =
+                            { bound = BB.fromCorners (vec2 0 0) (vec2 100 100) }
+
+                        inserted =
+                            insertManyIntoQt [ nodeTopRight, nodeBotRight ]
+                                (QtEmptyLeaf { bound = bb.bound })
+                    in
+                        -- Fun to traverse and inspect which quad branch a quadtree has
+                        inserted |> whatIsThis |> (Expect.equal "[ nw empty, ne occupied, se occupied, sw empty, ],")
+            , test "inserting 2 nodes both in the top left should create sub bounded boxes" <|
+                \_ ->
+                    let
+                        nodeTopLeft1 =
+                            { id = 0
+                            , mass = 1
+                            , coords = vec2 12.5 87.5
+                            }
+
+                        nodeTopLeft2 =
+                            { id = 1
+                            , mass = 1
+                            , coords = vec2 37.5 62.5
+                            }
+
+                        bb =
+                            { bound = BB.fromCorners (vec2 0 0) (vec2 100 100) }
+
+                        inserted =
+                            insertManyIntoQt [ nodeTopLeft1, nodeTopLeft2 ]
+                                (QtEmptyLeaf { bound = bb.bound })
+                    in
+                        -- Fun to traverse and inspect which quad branch a quadtree has
+                        inserted |> whatIsThis |> (Expect.equal "[ nw [ nw occupied, ne empty, se occupied, sw empty, ], ne empty, se empty, sw empty, ],")
             ]
         , describe "clamping functions"
             [ describe "clamp1D"
@@ -94,6 +139,30 @@ suite =
                 ]
             ]
         ]
+
+
+whatIsThis : QuadTree -> String
+whatIsThis qt =
+    case qt of
+        QtEmptyLeaf x ->
+            "empty,"
+
+        QtOccupiedLeaf x ->
+            "occupied,"
+
+        QtInternal x ->
+            [ "["
+            , "nw"
+            , x.subTrees.nw |> whatIsThis
+            , "ne"
+            , x.subTrees.ne |> whatIsThis
+            , "se"
+            , x.subTrees.se |> whatIsThis
+            , "sw"
+            , x.subTrees.sw |> whatIsThis
+            , "],"
+            ]
+                |> (String.join " ")
 
 
 

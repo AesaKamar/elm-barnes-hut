@@ -2,10 +2,12 @@ module QuadTreeView exposing (..)
 
 import BoundingBox as BB exposing (BoundingBox)
 import Svg.Attributes as Atrs
+import Html.Attributes as HtAtrs
 import Svg exposing (..)
 import QuadTree exposing (..)
 import Messages exposing (..)
-import Math.Vector2 exposing (getX, getY)
+import Math.Vector2 exposing (getX, getY, vec2, Vec2)
+import Window exposing (Size)
 
 
 -- TYPES
@@ -19,14 +21,14 @@ type alias ShouldDrawBoundingBox =
 -- SVG FUNCTIONS
 
 
-viewBoxSvgAttr : BoundingBox -> Svg.Attribute Msg
+viewBoxSvgAttr : Window.Size -> Svg.Attribute Msg
 viewBoxSvgAttr bb =
     let
         pts =
             [ 0
             , 0
-            , floor (getX (BB.bottomRight bb))
-            , floor (getY (BB.topRight bb))
+            , bb.width
+            , bb.height
             ]
 
         pointsAsString =
@@ -35,27 +37,27 @@ viewBoxSvgAttr bb =
         Atrs.viewBox pointsAsString
 
 
-widthSvgAttr : TopLeftOriginBoundingBox -> Svg.Attribute Msg
+widthSvgAttr : BoundingBox -> Svg.Attribute Msg
 widthSvgAttr bb =
-    Atrs.width (toString (bb.width) ++ "px")
+    Atrs.width (toString (bb |> BB.width) ++ "px")
 
 
-heightSvgAttr : TopLeftOriginBoundingBox -> Svg.Attribute Msg
+heightSvgAttr : BoundingBox -> Svg.Attribute Msg
 heightSvgAttr bb =
-    Atrs.height (toString (bb.height) ++ "px")
+    Atrs.height (toString (bb |> BB.height) ++ "px")
 
 
-displacementXAttr : TopLeftOriginBoundingBox -> Svg.Attribute Msg
+displacementXAttr : BoundingBox -> Svg.Attribute Msg
 displacementXAttr bb =
-    Atrs.x (toString (bb.xDisplacement) ++ "px")
+    Atrs.x (toString (bb |> BB.bottomLeft |> getX) ++ "px")
 
 
-displacementYAttr : TopLeftOriginBoundingBox -> Svg.Attribute Msg
+displacementYAttr : BoundingBox -> Svg.Attribute Msg
 displacementYAttr bb =
-    Atrs.y (toString (bb.yDisplacement) ++ "px")
+    Atrs.y (toString (bb |> BB.bottomLeft |> getY) ++ "px")
 
 
-positioningAttrs : TopLeftOriginBoundingBox -> List (Svg.Attribute Msg)
+positioningAttrs : BoundingBox -> List (Svg.Attribute Msg)
 positioningAttrs bb =
     [ heightSvgAttr bb
     , widthSvgAttr bb
@@ -66,16 +68,24 @@ positioningAttrs bb =
 
 emptyQuadrantAttrs =
     [ Atrs.fill "none"
-    , Atrs.strokeWidth "3px"
-    , Atrs.stroke "pink"
+    , HtAtrs.style
+        [ ( "outline-color", "pink" )
+        , ( "outline-style", "solid" )
+        , ( "outline-width", "4px" )
+        , ( "outline-offset", "-5px" )
+        ]
     , Atrs.fillOpacity "0.0"
     ]
 
 
 occupiedQuadrantAttrs =
     [ Atrs.fill "none"
-    , Atrs.strokeWidth "3px"
-    , Atrs.stroke "blue"
+    , HtAtrs.style
+        [ ( "outline-color", "red" )
+        , ( "outline-style", "solid" )
+        , ( "outline-width", "4px" )
+        , ( "outline-offset", "-5px" )
+        ]
     ]
 
 
@@ -85,51 +95,42 @@ subTreeAttrs =
     ]
 
 
-type alias TopLeftOriginBoundingBox =
-    { xDisplacement : Float, yDisplacement : Float, height : Float, width : Float }
+nodeAttrs =
+    [ Atrs.fill "black"
+    , Atrs.stroke "none"
+    , Atrs.r "5px"
+    ]
 
 
-transformBoundingBox : BoundingBox -> TopLeftOriginBoundingBox
-transformBoundingBox bb =
-    { xDisplacement = (BB.bottomLeft bb) |> getX
-    , yDisplacement = (BB.bottomLeft bb) |> getY
-    , height = BB.height bb
-    , width = BB.width bb
-    }
-
-
-assignBoundingBoxPositioningAttributes : BoundingBox -> List (Svg.Attribute Msg)
-assignBoundingBoxPositioningAttributes bb =
-    let
-        translated =
-            transformBoundingBox bb
-    in
-        [ Atrs.x (translated.xDisplacement |> toString)
-        , Atrs.y (translated.yDisplacement |> toString)
-        , Atrs.width (translated.width |> toString)
-        , Atrs.height (translated.height |> toString)
-        ]
+nodePositioningAttrs : Window.Size -> Node -> List (Svg.Attribute Msg)
+nodePositioningAttrs screenDims n =
+    [ Atrs.cx (((getX n.coords) |> toString) ++ "px")
+    , Atrs.cy (((getY n.coords) |> toString) ++ "px")
+    ]
 
 
 
 -- RENDERING FUNCTIONS
 
 
-viewQuadTree : QuadTree -> ShouldDrawBoundingBox -> Svg.Svg Msg
-viewQuadTree qt shouldDrawBoundingBox =
+viewQuadTree : QuadTree -> ShouldDrawBoundingBox -> Window.Size -> Svg.Svg Msg
+viewQuadTree qt shouldDrawBoundingBox screenDims =
     case qt of
         QtEmptyLeaf params ->
             Svg.rect
-                (positioningAttrs (transformBoundingBox params.bound) ++ emptyQuadrantAttrs)
+                (positioningAttrs params.bound ++ emptyQuadrantAttrs)
                 []
 
         QtOccupiedLeaf params ->
             Svg.g
                 []
                 [ Svg.rect
-                    (positioningAttrs (transformBoundingBox params.bound)
+                    (positioningAttrs params.bound
                         ++ occupiedQuadrantAttrs
                     )
+                    []
+                , Svg.circle
+                    (nodeAttrs ++ (nodePositioningAttrs screenDims params.occupant))
                     []
                 ]
 
@@ -137,12 +138,12 @@ viewQuadTree qt shouldDrawBoundingBox =
             Svg.g
                 []
                 [ Svg.rect
-                    (positioningAttrs (transformBoundingBox params.bound)
+                    (positioningAttrs params.bound
                         ++ subTreeAttrs
                     )
                     []
-                , viewQuadTree params.subTrees.nw shouldDrawBoundingBox
-                , viewQuadTree params.subTrees.ne shouldDrawBoundingBox
-                , viewQuadTree params.subTrees.se shouldDrawBoundingBox
-                , viewQuadTree params.subTrees.sw shouldDrawBoundingBox
+                , viewQuadTree params.subTrees.nw shouldDrawBoundingBox screenDims
+                , viewQuadTree params.subTrees.ne shouldDrawBoundingBox screenDims
+                , viewQuadTree params.subTrees.se shouldDrawBoundingBox screenDims
+                , viewQuadTree params.subTrees.sw shouldDrawBoundingBox screenDims
                 ]

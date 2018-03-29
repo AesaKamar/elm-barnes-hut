@@ -130,7 +130,7 @@ insertIntoQt n qt =
                 QtInternal
                     { bound = x.bound
                     , totalMass = x.occupant.mass + n.mass
-                    , subTrees = insertIntoSubQt n (updateSubQtBounds emptySubTreeWithNoBounds x.bound)
+                    , subTrees = insertManyIntoSubQt [ n, x.occupant ] (updateSubQtBounds emptySubTreeWithNoBounds x.bound)
                     }
     else
         let
@@ -150,6 +150,16 @@ insertIntoSubQt n sbt =
         { nw = sbt.nw, ne = sbt.ne, se = insertIntoQt n sbt.se, sw = sbt.sw }
     else
         { nw = sbt.nw, ne = sbt.ne, se = sbt.se, sw = insertIntoQt n sbt.sw }
+
+
+insertManyIntoSubQt : List Node -> QtSubTrees -> QtSubTrees
+insertManyIntoSubQt ns sbt =
+    List.foldl insertIntoSubQt sbt ns
+
+
+insertManyIntoQt : List Node -> QuadTree -> QuadTree
+insertManyIntoQt ns qt =
+    List.foldl insertIntoQt qt ns
 
 
 

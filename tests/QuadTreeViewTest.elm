@@ -5,6 +5,10 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Math.Vector2 exposing (vec2)
 import BoundingBox as BB
+import Html
+import Html.Attributes exposing (class)
+import Test.Html.Query as Query
+import Test.Html.Selector exposing (text, tag)
 
 
 bb =
@@ -13,8 +17,8 @@ bb =
 
 suite : Test
 suite =
-    describe "Helper functions"
-        [ describe "Asserting about the corners of a BBox"
+    describe "Viewing a quadTree as SVG"
+        [ describe "The corners of a bounding box are oriented as we expect"
             [ test "topLeft should be 0 100" <|
                 \_ ->
                     (BB.topLeft bb) |> Expect.equal (vec2 0 100)
@@ -22,4 +26,6 @@ suite =
                 \_ ->
                     (BB.bottomRight bb) |> Expect.equal (vec2 100 0)
             ]
+
+        -- , describe "inserting nodes into a quadTree " []
         ]

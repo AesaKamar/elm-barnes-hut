@@ -12,12 +12,15 @@ fromCorners topLeft botRight =
 
 initNodeIds : List NodeId
 initNodeIds =
-    [ 1, 2, 3, 4 ]
+    [ 1, 2, 3 ]
 
 
 initNodes : List Node
 initNodes =
-    (List.map (\i -> { id = i, mass = 1.0, coords = vec2 1.0 1.0 }) initNodeIds)
+    [ { id = 1, mass = 1.0, coords = vec2 300.0 300.0 }
+    , { id = 2, mass = 1.0, coords = vec2 500.0 500.0 }
+    , { id = 3, mass = 1.0, coords = vec2 900.0 900.0 }
+    ]
 
 
 initialQuadTree : QuadTree
