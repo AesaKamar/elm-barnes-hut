@@ -183,3 +183,12 @@ emptySubTreeWithNoBounds =
 emptyLeafWithNoBounds : QuadTree
 emptyLeafWithNoBounds =
     QtEmptyLeaf { bound = BoundingBox.fromPoint (vec2 0 0) }
+
+
+generateQuadTree : BoundingBox -> List Node -> QuadTree
+generateQuadTree bb ns =
+    let
+        initialQuadTree =
+            QtEmptyLeaf { bound = bb }
+    in
+        List.foldl (insertIntoQt) initialQuadTree ns

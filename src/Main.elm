@@ -9,6 +9,8 @@ import Messages exposing (..)
 import QuadTreeView exposing (..)
 import Initialization exposing (..)
 import Svg.Attributes
+import BoundingBox
+import Math.Vector2 exposing (vec2)
 
 
 main =
@@ -25,7 +27,7 @@ main =
 
 
 type alias Model =
-    { nodes : List NodeId
+    { nodes : List Node
     , edges : List ( NodeId, NodeId )
     , quadTree : QuadTree
     , screenDims : Size
@@ -34,9 +36,9 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { nodes = initNodeIds
+    ( { nodes = initNodes
       , edges = []
-      , quadTree = insertedQuadTree
+      , quadTree = emptyLeafWithNoBounds
       , screenDims = { height = 0, width = 0 }
       }
     , Cmd.none
@@ -57,10 +59,18 @@ update msg model =
 
                 topRight =
                     ( s.width |> toFloat, s.height |> toFloat )
+
+                quadTree =
+                    generateQuadTree (sizeToBounds model.screenDims) model.nodes
             in
-                ( Model model.nodes model.edges (updateQtBound model.quadTree (fromCorners botLeft topRight)) s
+                ( Model model.nodes model.edges quadTree s
                 , Cmd.none
                 )
+
+
+sizeToBounds : Size -> BoundingBox.BoundingBox
+sizeToBounds s =
+    BoundingBox.fromCorners (vec2 0 0) (vec2 (s.width |> toFloat) (s.height |> toFloat))
 
 
 
